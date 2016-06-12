@@ -1,7 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.prashantmaurice.shadowfaxhackandroid">
+    package="com.prashantmaurice.shadowfaxhackandroid"
+    android:versionCode="25"
+    android:versionName="2.0.5" >
 
+
+    <uses-sdk
+        android:minSdkVersion="7"
+        android:targetSdkVersion="7" />
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <permission android:name="com.prashantmaurice.shadowfaxhackandroid.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+    <uses-permission android:name="com.prashantmaurice.shadowfaxhackandroid.permission.C2D_MESSAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.STORAGE" />
@@ -10,16 +21,28 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:excludeFromRecents="false"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:launchMode="singleInstance"
+        android:taskAffinity=""
+        android:theme="@style/AppTheme" >
         <activity
-            android:name=".MainActivity"
-            android:label="Main"></activity>
+            android:name=".MainActivity.MainActivity"
+            android:label="@string/title_activity_main" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="MainScreen" />
 
-        <receiver android:name=".MyPhoneReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".MyPhoneReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
                 <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
@@ -30,27 +53,37 @@
 
         <activity
             android:name=".TermsActivity"
-            android:label="main" />
-        <activity
-            android:name=".Main2Activity"
-            android:label="@string/title_activity_main2"
-            android:theme="@style/AppTheme.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
+            android:label="@string/title_activity_main" />
         <service
-            android:name=".BackgroundService"
-            android:enabled="true"
-            android:exported="true">
+            android:name=".GCM.NotificationListenerService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE" />
-                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
+        <receiver
+            android:name="com.google.android.gms.gcm.GcmReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name="com.example.gcm" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name="com.prashantmaurice.shadowfaxhackandroid.GCM.InstanceIdRegistrationservice"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.iid.InstanceID" />
+            </intent-filter>
+        </service>
+        <!--<service-->
+        <!--android:name="com.prashantmaurice.shadowfaxhackandroid.GCM.MyGcmListenerService"-->
+        <!--android:exported="false" >-->
+        <!--<intent-filter>-->
+        <!--<action android:name="com.google.android.c2dm.intent.RECEIVE" />-->
+        <!--</intent-filter>-->
+        <!--</service>-->
     </application>
 
 </manifest>

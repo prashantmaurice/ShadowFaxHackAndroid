@@ -16,14 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with Call recorder For Android.  If not, see <http://www.gnu.org/licenses/>
  */
-package com.prashantmaurice.shadowfaxhackandroid;
-
-import java.io.File;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+package com.prashantmaurice.shadowfaxhackandroid.MainActivity;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -35,6 +28,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+
+import com.prashantmaurice.shadowfaxhackandroid.Constants;
+import com.prashantmaurice.shadowfaxhackandroid.FileHelper;
+import com.prashantmaurice.shadowfaxhackandroid.Model;
+import com.prashantmaurice.shadowfaxhackandroid.NetworkController;
+import com.prashantmaurice.shadowfaxhackandroid.R;
+
+import java.io.File;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 public class MyCallsAdapter extends ArrayAdapter<Model> {
 
@@ -90,9 +96,9 @@ public class MyCallsAdapter extends ArrayAdapter<Model> {
 	public void showPromotionPieceDialog(final String fileName,
 			final int position) {
 		final CharSequence[] items = {
-				context.getString(R.string.confirm_play),
-				context.getString(R.string.confirm_send),
-				context.getString(R.string.options_delete) };
+				"Play",
+				"Send",
+				"Delete" };
 
 		new AlertDialog.Builder(context).setTitle(R.string.options_title)
 				.setItems(items, new DialogInterface.OnClickListener() {
@@ -101,7 +107,7 @@ public class MyCallsAdapter extends ArrayAdapter<Model> {
 							// startPlay(fileName);
 							startPlayExternal(fileName);
 						} else if (item == 1) {
-							sendMail(fileName);
+							openDetails(fileName);
 						} else if (item == 2) {
 							DeleteRecord(fileName, position);
 						}
@@ -148,33 +154,39 @@ public class MyCallsAdapter extends ArrayAdapter<Model> {
 						}).show();
 	}
 
-	void sendMail(String fileName) {
-		String filepath = FileHelper.getFilePath() + "/"
-				+ Constants.FILE_DIRECTORY;
+	void openDetails(String fileName) {
+		String filepath = FileHelper.getFilePath() + "/"+ Constants.FILE_DIRECTORY;
 		File file = new File(filepath, fileName);
+		if(file!=null){
+			NetworkController.getInstance(context).fetchDataFromServer(new NetworkController.UploadTask(file),true,filepath, fileName);
+		}
 
-		Intent sendIntent;
-
-		sendIntent = new Intent(Intent.ACTION_SEND);
-		sendIntent.putExtra(Intent.EXTRA_SUBJECT,
-				context.getString(R.string.sendMail_subject));
-		sendIntent.putExtra(Intent.EXTRA_TEXT,
-				context.getString(R.string.sendMail_body));
-		if (file.exists())
-			sendIntent.putExtra(
-					Intent.EXTRA_STREAM,
-					Uri.parse("file://" + FileHelper.getFilePath() + "/"
-							+ Constants.FILE_DIRECTORY + "/" + fileName));
-		else
-			sendIntent.putExtra(
-					Intent.EXTRA_STREAM,
-					Uri.parse("file://"
-							+ context.getFilesDir().getAbsolutePath() + "/"
-							+ Constants.FILE_DIRECTORY + "/" + fileName));
-		sendIntent.setType("audio/3gpp");
-
-		context.startActivity(Intent.createChooser(sendIntent,
-				context.getString(R.string.send_mail)));
+//
+//		String filepath = FileHelper.getFilePath() + "/"+ Constants.FILE_DIRECTORY;
+//		File file = new File(filepath, fileName);
+//
+//		Intent sendIntent;
+//
+//		sendIntent = new Intent(Intent.ACTION_SEND);
+//		sendIntent.putExtra(Intent.EXTRA_SUBJECT,
+//				context.getString(R.string.sendMail_subject));
+//		sendIntent.putExtra(Intent.EXTRA_TEXT,
+//				context.getString(R.string.sendMail_body));
+//		if (file.exists())
+//			sendIntent.putExtra(
+//					Intent.EXTRA_STREAM,
+//					Uri.parse("file://" + FileHelper.getFilePath() + "/"
+//							+ Constants.FILE_DIRECTORY + "/" + fileName));
+//		else
+//			sendIntent.putExtra(
+//					Intent.EXTRA_STREAM,
+//					Uri.parse("file://"
+//							+ context.getFilesDir().getAbsolutePath() + "/"
+//							+ Constants.FILE_DIRECTORY + "/" + fileName));
+//		sendIntent.setType("audio/3gpp");
+//
+//		context.startActivity(Intent.createChooser(sendIntent,
+//				context.getString(R.string.send_mail)));
 	}
 
 	void startPlayExternal(String charSequence) {

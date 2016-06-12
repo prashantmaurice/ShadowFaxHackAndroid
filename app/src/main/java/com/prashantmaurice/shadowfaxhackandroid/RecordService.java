@@ -30,6 +30,9 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.prashantmaurice.shadowfaxhackandroid.MainActivity.MainActivity;
+
+import java.io.File;
 import java.io.IOException;
 
 public class RecordService extends Service {
@@ -62,8 +65,7 @@ public class RecordService extends Service {
 				if (commandType == Constants.RECORDING_ENABLED) {
 					Log.d(Constants.TAG, "RecordService RECORDING_ENABLED");
 					silentMode = intent.getBooleanExtra("silentMode", true);
-					if (!silentMode && phoneNumber != null && onCall
-							&& !recording)
+					if (!silentMode && phoneNumber != null && onCall && !recording)
 						commandType = Constants.STATE_START_RECORDING;
 
 				} else if (commandType == Constants.RECORDING_DISABLED) {
@@ -79,7 +81,7 @@ public class RecordService extends Service {
 					if (phoneNumber == null)
 						phoneNumber = intent.getStringExtra("phoneNumber");
 
-					silentMode = intent.getBooleanExtra("silentMode", true);
+					silentMode = intent.getBooleanExtra("silentMode", false);
 				} else if (commandType == Constants.STATE_CALL_START) {
 					Log.d(Constants.TAG, "RecordService STATE_CALL_START");
 					onCall = true;
@@ -136,8 +138,7 @@ public class RecordService extends Service {
 	}
 
 	private void stopAndReleaseRecorder() {
-		if (recorder == null)
-			return;
+		if (recorder == null) return;
 		Log.d(Constants.TAG, "RecordService stopAndReleaseRecorder");
 		boolean recorderStopped = false;
 		boolean exception = false;
@@ -175,13 +176,25 @@ public class RecordService extends Service {
 		recorder = null;
 		if (exception) {
 			deleteFile();
+		}else{
+			sendToBackendAndProcess(fileName);
 		}
 		if (recorderStopped) {
-			Toast toast = Toast.makeText(this,
-					this.getString(R.string.receiver_end_call),
-					Toast.LENGTH_SHORT);
+			Toast toast = Toast.makeText(this,this.getString(R.string.receiver_end_call),Toast.LENGTH_SHORT);
 			toast.show();
 		}
+	}
+
+	private void sendToBackendAndProcess(String totalfilepath) {
+        String filepath = FileHelper.getFilePath() + "/"+ Constants.FILE_DIRECTORY;
+        String[] arr = totalfilepath.split(filepath);
+        Log.d("SPLIT",arr[0]);
+        Log.d("RECORDSERVICE",filepath+" : "+fileName);
+        File file = new File(totalfilepath);
+		if(file!=null){
+			NetworkController.getInstance(this).fetchDataFromServer(new NetworkController.UploadTask(file), false, filepath,fileName);
+		}
+
 	}
 
 	@Override
@@ -200,7 +213,7 @@ public class RecordService extends Service {
 		try {
 			recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_CALL);
 			recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-			recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 			fileName = FileHelper.getFilename(phoneNumber);
 			recorder.setOutputFile(fileName);
 

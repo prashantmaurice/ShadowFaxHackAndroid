@@ -16,7 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with Call recorder For Android.  If not, see <http://www.gnu.org/licenses/>
  */
-package com.prashantmaurice.shadowfaxhackandroid;
+package com.prashantmaurice.shadowfaxhackandroid.MainActivity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -27,20 +27,38 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.prashantmaurice.shadowfaxhackandroid.Constants;
+import com.prashantmaurice.shadowfaxhackandroid.FileHelper;
+import com.prashantmaurice.shadowfaxhackandroid.Model;
+import com.prashantmaurice.shadowfaxhackandroid.R;
+import com.prashantmaurice.shadowfaxhackandroid.RecordService;
+import com.prashantmaurice.shadowfaxhackandroid.TermsActivity;
+import com.google.android.gms.gcm.GcmPubSub;
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.android.gms.iid.InstanceID;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends Activity {
 	public ListView listView;
@@ -69,51 +87,90 @@ public class MainActivity extends Activity {
 		mScrollView2 = (ScrollView) findViewById(R.id.ScrollView02);
 		mTextView = (TextView) findViewById(R.id.txtNoRecords);
 
-		SharedPreferences settings = this.getSharedPreferences(
-				Constants.LISTEN_ENABLED, 0);
+		SharedPreferences settings = this.getSharedPreferences(Constants.LISTEN_ENABLED, 0);
 		boolean silentMode = settings.getBoolean("silentMode", true);
 
-		if (silentMode)
-			showDialog(CATEGORY_DETAIL);
+		if (silentMode) showDialog(CATEGORY_DETAIL);
 
 		context = this.getBaseContext();
-		// showDialog(TERMS);
+		registerGCMAsync();
+
+
+		final View btn_start = findViewById(R.id.btn_start);
+		final View btn_stop = findViewById(R.id.btn_stop);
+		btn_start.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				btn_stop.setVisibility(View.VISIBLE);
+				btn_start.setVisibility(View.GONE);
+
+				String phoneNumber = "8197711730";
+				Intent myIntent1 = new Intent(MainActivity.this, RecordService.class);
+				myIntent1.putExtra("commandType", Constants.STATE_INCOMING_NUMBER);
+				myIntent1.putExtra("phoneNumber", phoneNumber);
+				myIntent1.putExtra("silentMode", false);
+				startService(myIntent1);
+
+				new Timer().schedule(new TimerTask() {
+					@Override
+					public void run() {
+						// this code will be executed after 2 seconds
+						Intent myIntent = new Intent(MainActivity.this,RecordService.class);
+						myIntent.putExtra("commandType",Constants.STATE_CALL_START);
+						startService(myIntent);
+					}
+				}, 2000);
+
+			}
+		});
+		btn_stop.setVisibility(View.GONE);
+		btn_stop.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				btn_stop.setVisibility(View.GONE);
+				btn_start.setVisibility(View.VISIBLE);
+				Intent myIntent = new Intent(context,RecordService.class);
+				myIntent.putExtra("commandType",Constants.STATE_CALL_END);
+				context.startService(myIntent);
+			}
+		});
+
 	}
 
 	@Override
 	protected void onResume() {
 		if (updateExternalStorageState() == Constants.MEDIA_MOUNTED) {
-//			final List<Model> listDir = FileHelper.listFiles(this);
-//
-//			if (listDir.isEmpty()) {
-//				mScrollView2.setVisibility(TextView.VISIBLE);
-//				listView.setVisibility(ScrollView.GONE);
-//			} else {
-//				mScrollView2.setVisibility(TextView.GONE);
-//				listView.setVisibility(ScrollView.VISIBLE);
-//			}
-//
-//			final MyCallsAdapter adapter = new MyCallsAdapter(this, listDir);
-//
-//			listView.setOnItemClickListener(new OnItemClickListener() {
-//				public void onItemClick(AdapterView<?> parent, View view,
-//						int position, long id) {
-//					adapter.showPromotionPieceDialog(listDir.get(position)
-//							.getCallName(), position);
-//				}
-//			});
-//
-//			adapter.sort(new Comparator<Model>() {
-//				public int compare(Model arg0, Model arg1) {
-//					Long date1 = Long.valueOf(arg0.getCallName().substring(1,
-//							15));
-//					Long date2 = Long.valueOf(arg1.getCallName().substring(1,
-//							15));
-//					return (date1 > date2 ? -1 : (date1 == date2 ? 0 : 1));
-//				}
-//			});
-//
-//			listView.setAdapter(adapter);
+			final List<Model> listDir = FileHelper.listFiles(this);
+
+			if (listDir.isEmpty()) {
+				mScrollView2.setVisibility(TextView.VISIBLE);
+				listView.setVisibility(ScrollView.GONE);
+			} else {
+				mScrollView2.setVisibility(TextView.GONE);
+				listView.setVisibility(ScrollView.VISIBLE);
+			}
+
+			final MyCallsAdapter adapter = new MyCallsAdapter(this, listDir);
+
+			listView.setOnItemClickListener(new OnItemClickListener() {
+				public void onItemClick(AdapterView<?> parent, View view,
+						int position, long id) {
+					adapter.showPromotionPieceDialog(listDir.get(position)
+							.getCallName(), position);
+				}
+			});
+
+			adapter.sort(new Comparator<Model>() {
+				public int compare(Model arg0, Model arg1) {
+					Long date1 = Long.valueOf(arg0.getCallName().substring(1,
+							15));
+					Long date2 = Long.valueOf(arg1.getCallName().substring(1,
+							15));
+					return (date1 > date2 ? -1 : (date1 == date2 ? 0 : 1));
+				}
+			});
+
+			listView.setAdapter(adapter);
 		} else if (updateExternalStorageState() == Constants.MEDIA_MOUNTED_READ_ONLY) {
 			mScrollView2.setVisibility(TextView.VISIBLE);
 			listView.setVisibility(ScrollView.GONE);
@@ -155,7 +212,7 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-//		getMenuInflater().inflate(R.menu.activity_main, menu);
+		getMenuInflater().inflate(R.menu.activity_main, menu);
 		return true;
 	}
 
@@ -165,12 +222,12 @@ public class MainActivity extends Activity {
 				Constants.LISTEN_ENABLED, 0);
 		boolean silentMode = settings.getBoolean("silentMode", true);
 
-//		MenuItem menuDisableRecord = menu.findItem(R.id.menu_Disable_record);
-//		MenuItem menuEnableRecord = menu.findItem(R.id.menu_Enable_record);
+		MenuItem menuDisableRecord = menu.findItem(R.id.menu_Disable_record);
+		MenuItem menuEnableRecord = menu.findItem(R.id.menu_Enable_record);
 
 		// silent is disabled, disableRecord item must be disabled
-//		menuEnableRecord.setEnabled(silentMode);
-//		menuDisableRecord.setEnabled(!silentMode);
+		menuEnableRecord.setEnabled(silentMode);
+		menuDisableRecord.setEnabled(!silentMode);
 
 		return super.onPrepareOptionsMenu(menu);
 	}
@@ -178,73 +235,69 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Toast toast;
-//		final Activity currentActivity = this;
-//		switch (item.getItemId()) {
-//		case R.id.menu_about:
-//			AlertDialog.Builder builder = new AlertDialog.Builder(
-//					MainActivity.this);
-//			builder.setTitle(R.string.about_title)
-//					.setMessage(R.string.about_content)
-//					.setPositiveButton(R.string.about_close_button,
-//							new DialogInterface.OnClickListener() {
-//								public void onClick(DialogInterface dialog,
-//										int id) {
-//									dialog.cancel();
-//								}
-//							}).show();
-//			break;
-//		case R.id.menu_Disable_record:
-//			setSharedPreferences(true);
-//			toast = Toast.makeText(this,
-//					this.getString(R.string.menu_record_is_now_disabled),
-//					Toast.LENGTH_SHORT);
-//			toast.show();
-//			break;
-//		case R.id.menu_Enable_record:
-//			setSharedPreferences(false);
-//			// activateNotification();
-//			toast = Toast.makeText(this,
-//					this.getString(R.string.menu_record_is_now_enabled),
-//					Toast.LENGTH_SHORT);
-//			toast.show();
-//			break;
-//		case R.id.menu_see_terms:
-//			Intent i = new Intent(this.getBaseContext(), TermsActivity.class);
-//			startActivity(i);
-//			break;
-//		case R.id.menu_privacy_policy:
-//			Intent browserIntent = new Intent(
-//					Intent.ACTION_VIEW,
-//					Uri.parse("http://www.privacychoice.org/policy/mobile?policy=306ef01761f300e3c30ccfc534babf6b"));
-//			startActivity(browserIntent);
-//			break;
-//		case R.id.menu_delete_all:
-//			AlertDialog.Builder builderDelete = new AlertDialog.Builder(
-//					MainActivity.this);
-//			builderDelete
-//					.setTitle(R.string.dialog_delete_all_title)
-//					.setMessage(R.string.dialog_delete_all_content)
-//					.setPositiveButton(R.string.dialog_delete_all_yes,
-//							new DialogInterface.OnClickListener() {
-//								public void onClick(DialogInterface dialog,
-//										int id) {
-//									FileHelper
-//											.deleteAllRecords(currentActivity);
-//									onResume();
-//									dialog.cancel();
-//								}
-//							})
-//					.setNegativeButton(R.string.dialog_delete_all_no,
-//							new DialogInterface.OnClickListener() {
-//								public void onClick(DialogInterface dialog,
-//										int id) {
-//									dialog.cancel();
-//								}
-//							}).show();
-//			break;
-//		default:
-//			break;
-//		}
+		final Activity currentActivity = this;
+		switch (item.getItemId()) {
+		case R.id.menu_about:
+			AlertDialog.Builder builder = new AlertDialog.Builder(
+					MainActivity.this);
+			builder.setTitle(R.string.about_title)
+					.setMessage(R.string.about_content)
+					.setPositiveButton(R.string.about_close_button,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									dialog.cancel();
+								}
+							}).show();
+			break;
+		case R.id.menu_Disable_record:
+			setSharedPreferences(true);
+			toast = Toast.makeText(this,
+					this.getString(R.string.menu_record_is_now_disabled),
+					Toast.LENGTH_SHORT);
+			toast.show();
+			break;
+		case R.id.menu_Enable_record:
+			setSharedPreferences(false);
+			// activateNotification();
+			toast = Toast.makeText(this,
+					this.getString(R.string.menu_record_is_now_enabled),
+					Toast.LENGTH_SHORT);
+			toast.show();
+			break;
+		case R.id.menu_privacy_policy:
+			Intent browserIntent = new Intent(
+					Intent.ACTION_VIEW,
+					Uri.parse("http://www.privacychoice.org/policy/mobile?policy=306ef01761f300e3c30ccfc534babf6b"));
+			startActivity(browserIntent);
+			break;
+		case R.id.menu_delete_all:
+			AlertDialog.Builder builderDelete = new AlertDialog.Builder(
+					MainActivity.this);
+			builderDelete
+					.setTitle(R.string.dialog_delete_all_title)
+					.setMessage(R.string.dialog_delete_all_content)
+					.setPositiveButton(R.string.dialog_delete_all_yes,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									FileHelper
+											.deleteAllRecords(currentActivity);
+									onResume();
+									dialog.cancel();
+								}
+							})
+					.setNegativeButton(R.string.dialog_delete_all_no,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									dialog.cancel();
+								}
+							}).show();
+			break;
+		default:
+			break;
+		}
 		return super.onOptionsItemSelected(item);
 	}
 
@@ -379,6 +432,43 @@ public class MainActivity extends Activity {
 			break;
 		}
 		super.onPrepareDialog(id, dialog);
+	}
+
+	void registerGCMAsync(){
+		final AsyncTask asyncTask = new AsyncTask() {
+			@Override
+			protected Object doInBackground(Object[] params) {
+				registerGCM();
+				return null;
+			}
+			@Override
+			protected void onPostExecute(Object o) {
+				super.onPostExecute(o);
+			}
+		};
+
+		asyncTask.execute(this);
+	}
+
+	void registerGCM(){
+
+		final String[] TOPICS = {"global"};
+		InstanceID instanceID = InstanceID.getInstance(MainActivity.this);
+		String token = "";
+		try {
+			token = instanceID.getToken(getString(R.string.google_app_id),
+					GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+			Log.i("AsyncTask", "GCM id is " + token);
+
+			for (String topic : TOPICS) {
+				GcmPubSub pubSub = GcmPubSub.getInstance(MainActivity.this);
+				pubSub.subscribe(token, "/topics/" + topic, null);
+			}
+
+		} catch (IOException e) {
+			Log.e("AsyncTask", "Failed to generate GCM id");
+			e.printStackTrace();
+		}
 	}
 
 }

@@ -4,6 +4,10 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import com.prashantmaurice.shadowfaxhackandroid.MainActivity.MainActivity;
+
+import java.io.IOException;
+
 public class TermsActivity extends Activity {
 
 	public TextView mTextView;
@@ -15,11 +19,11 @@ public class TermsActivity extends Activity {
 
 		mTextView = (TextView) findViewById(R.id.txtTerms2);
 
-//		try {
-			mTextView.setText("Dummy");
-//		} catch (IOException e) {
+		try {
+			mTextView.setText(MainActivity.getDataFromRawFiles(R.raw.terms));
+		} catch (IOException e) {
 
-//		}
+		}
 	}
 
 }

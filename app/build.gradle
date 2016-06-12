@@ -1,27 +1,45 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '22.0.0'
+    compileSdkVersion 21
+    buildToolsVersion "23.0.3"
+    packagingOptions {
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/DEPENDENCIES'
+    }
 
     defaultConfig {
         applicationId "com.prashantmaurice.shadowfaxhackandroid"
-        minSdkVersion 16
-        targetSdkVersion 22
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 15
+        targetSdkVersion 21
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_5
+            targetCompatibility JavaVersion.VERSION_1_5
+        }
     }
+
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
+    }
+    compileOptions {
+        targetCompatibility 1.6
+        sourceCompatibility 1.6
     }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:22.1.1'
-    compile 'com.android.support:design:22.2.1'
+    compile "com.google.android.gms:play-services-gcm:9.0.0"
+    compile 'com.android.support:support-v4:21.0.0'
+    compile 'com.mcxiaoke.volley:library-aar:1.0.0'
+    compile('org.apache.httpcomponents:httpmime:4.3') { //needed for multipart to work
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+    }
+    compile('org.apache.httpcomponents:httpcore:4.4.1') {
+        exclude group: 'org.apache.httpcomponents', module: 'httpclient'
+
+    }
 }

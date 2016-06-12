@@ -207,4 +207,20 @@ public class FileHelper {
 			e.printStackTrace();
 		}
 	}
+
+	public static File getFile(String fileName) {
+		if (fileName == null) return null;
+		Log.d(Constants.TAG, "FileHelper deleteFile " + fileName);
+		try {
+			File file = new File(fileName);
+
+			if (file.exists()) {
+				return file;
+			}
+		} catch (Exception e) {
+			Log.e(Constants.TAG, "Exception");
+			e.printStackTrace();
+		}
+		return null;
+	}
 }
